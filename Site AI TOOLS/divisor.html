@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divisor de Texto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="logo.png.ico">
+</head>
+<body>
+    <div class="glass-container">
+       <nav class="navbar">
+    <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="tradutor.html" class="nav-link"><i class="fas fa-language"></i> Tradutor</a>
+    <a href="divisor.html" class="nav-link active"><i class="fas fa-cut"></i> Divisor</a>
+    <a href="contador.html" class="nav-link"><i class="fas fa-calculator"></i> Contador</a>
+    <a href="srt.html" class="nav-link"><i class="fas fa-closed-captioning"></i> Conversor</a>
+    <a href="case.html" class="nav-link"><i class="fas fa-text-height"></i> Caixa</a>
+    <a href="transcricao.html" class="nav-link"><i class="fas fa-headphones"></i> Transcrição</a>
+</nav>
+        
+<h1><i class="fas fa-cut"></i> Divisor de Texto</h1>
+
+    <div class="input-group">
+        <textarea id="sourceText" placeholder="Cole seu texto longo aqui..."></textarea>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-primary" onclick="splitText()">
+            <i class="fas fa-scissors"></i> Dividir
+        </button>
+        <button class="btn btn-danger" onclick="clearSplit()">
+            <i class="fas fa-trash-alt"></i> Limpar
+        </button>
+    </div>
+
+    <div id="partsContainer" class="parts-grid"></div>
+</div>
+ <script>
+       function splitText() {
+    const text = document.getElementById('sourceText').value;
+    if (!text.trim()) return showAlert('Insira texto para dividir!', 'error');
+
+    const maxLength = 4800;
+    const parts = [];
+    let start = 0;
+
+    while (start < text.length) {
+        let end = start + maxLength;
+        if (end < text.length && !/\s/.test(text[end])) {
+            end = text.lastIndexOf(' ', end);
+            if (end === -1 || end <= start) {
+                end = start + maxLength;
+            }
+        }
+        parts.push(text.slice(start, end).trim());
+        start = end;
+    }
+
+    displayParts(parts);
+}
+
+function displayParts(parts) {
+    const container = document.getElementById('partsContainer');
+    container.innerHTML = '';
+
+    parts.forEach((part, index) => {
+        const partDiv = document.createElement('div');
+        partDiv.className = 'part-container';
+        partDiv.innerHTML = `
+            <h3><i class="fas fa-file-alt"></i> Parte ${index + 1} <small>(${part.length} caracteres)</small></h3>
+            <pre>${part}</pre>
+            <button class="btn btn-secondary copy-part" onclick="copyPart(${index})">
+                <i class="fas fa-copy"></i> Copiar Parte
+            </button>
+        `;
+        container.appendChild(partDiv);
+    });
+}
+
+function copyPart(index) {
+    const partText = document.querySelectorAll('pre')[index].textContent;
+    navigator.clipboard.writeText(partText);
+    showAlert('Parte copiada!', 'success');
+}
+
+function clearSplit() {
+    document.getElementById('sourceText').value = '';
+    document.getElementById('partsContainer').innerHTML = '';
+}
+    </script>
+</body>
+</html>

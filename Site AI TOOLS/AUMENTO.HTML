@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajustar Tamanho do Texto</title>
+    <style>
+        /* Estilo da aba */
+        .font-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .font-control button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .font-control button:hover {
+            background-color: #45a049;
+        }
+
+        /* Estilo do conteúdo */
+        .content {
+            font-size: 16px; /* Tamanho inicial da fonte */
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Aba de controle de fonte -->
+    <div class="font-control">
+        <button onclick="increaseFont()">A+</button>
+        <button onclick="decreaseFont()">A-</button>
+    </div>
+
+    <!-- Conteúdo da página -->
+    <div class="content">
+        <h1>Exemplo de Título</h1>
+        <p>Este é um exemplo de texto para demonstrar o aumento e diminuição do tamanho da fonte.</p>
+        <p>Você pode ajustar o tamanho do texto usando os botões acima.</p>
+    </div>
+
+    <script>
+        // Função para aumentar o tamanho da fonte
+        function increaseFont() {
+            const content = document.querySelector('.content');
+            let currentSize = parseFloat(window.getComputedStyle(content).fontSize);
+            content.style.fontSize = (currentSize + 2) + 'px';
+        }
+
+        // Função para diminuir o tamanho da fonte
+        function decreaseFont() {
+            const content = document.querySelector('.content');
+            let currentSize = parseFloat(window.getComputedStyle(content).fontSize);
+            content.style.fontSize = (currentSize - 2) + 'px';
+        }
+    </script>
+
+</body>
+</html>

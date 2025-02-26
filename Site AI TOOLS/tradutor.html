@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tradutor Universal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="logo.png.ico">
+</head>
+<body>
+    <div class="glass-container">
+        <nav class="navbar">
+            <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+            <a href="tradutor.html" class="nav-link active"><i class="fas fa-language"></i> Tradutor</a>
+            <a href="divisor.html" class="nav-link"><i class="fas fa-cut"></i> Divisor</a>
+            <a href="contador.html" class="nav-link"><i class="fas fa-calculator"></i> Contador</a>
+            <a href="srt.html" class="nav-link"><i class="fas fa-closed-captioning"></i> Conversor</a>
+            <a href="case.html" class="nav-link"><i class="fas fa-text-height"></i> Caixa</a>
+            <a href="transcricao.html" class="nav-link"><i class="fas fa-headphones"></i> Transcrição</a>
+        </nav>
+
+        <h1><i class="fas fa-language"></i> Tradutor Universal (em Manutenção)</h1>
+
+        <div class="file-input-group">
+            <label class="custom-file-input">
+                <i class="fas fa-upload"></i> Arraste ou selecione o arquivo
+                <input type="file" id="fileInput" accept="*/*">
+            </label>
+            <span id="selectedFile" class="file-name"></span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress"></div>
+        </div>
+
+        <div class="language-select-group">
+            <select class="language-select" id="sourceLanguage">
+                <option value="auto">🌐 Detectar idioma</option>
+                <option value="pt">🇧🇷 Português</option>
+                <option value="en">🇺🇸 Inglês</option>
+                <option value="es">🇪🇸 Espanhol</option>
+                <option value="fr">🇫🇷 Francês</option>
+                <option value="de">🇩🇪 Alemão</option>
+                <option value="ja">🇯🇵 Japonês</option>
+                <option value="zh">🇨🇳 Chinês</option>
+                <option value="ru">🇷🇺 Russo</option>
+                <option value="it">🇮🇹 Italiano</option>
+            </select>
+
+            <select class="language-select" id="targetLanguage">
+                <option value="en">🇺🇸 Inglês</option>
+                <option value="pt">🇧🇷 Português</option>
+                <option value="es">🇪🇸 Espanhol</option>
+                <option value="fr">🇫🇷 Francês</option>
+                <option value="de">🇩🇪 Alemão</option>
+                <option value="ja">🇯🇵 Japonês</option>
+                <option value="zh">🇨🇳 Chinês</option>
+                <option value="ru">🇷🇺 Russo</option>
+                <option value="it">🇮🇹 Italiano</option>
+            </select>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="translateText()" id="translateBtn">
+                <i class="fas fa-exchange-alt"></i> Traduzir
+            </button>
+            <button class="btn btn-secondary" onclick="downloadTranslation()" id="downloadTransBtn" disabled>
+                <i class="fas fa-download"></i> Baixar
+            </button>
+            <button class="btn btn-danger" onclick="clearTranslation()">
+                <i class="fas fa-trash-alt"></i> Limpar
+            </button>
+        </div>
+
+        <pre id="translationResult"></pre>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script>
+        const API_KEY = '';  // Substitua pela sua chave do Gemini AI
+
+        // Função para chamada da API Gemini AI
+        async function callGeminiAPITranslation(text, sourceLang, targetLang) {
+            const url = 'https://gemini.googleapis.com/v1alpha1/translate';  // Substitua com a URL correta da Gemini API
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    q: text,
+                    source_language: sourceLang,
+                    target_language: targetLang
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) {
+                throw new Error(data.error.message);
+            }
+            return data.translations[0].translatedText;
+        }
+
+        // Função para traduzir o texto extraído do arquivo
+        async function translateText() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) return showAlert('Selecione um arquivo!', 'error');
+
+            const allowedTypes = [
+                'text/plain',
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                return showAlert('Tipo de arquivo não suportado!', 'error');
+            }
+
+            const sourceLang = document.getElementById('sourceLanguage').value;
+            const targetLang = document.getElementById('targetLanguage').value;
+
+            if (sourceLang === targetLang) {
+                return showAlert('Selecione idiomas diferentes para tradução!', 'error');
+            }
+
+            toggleLoading(true, 'translateBtn');
+            document.querySelector('.progress-bar').style.display = 'block';
+            updateProgress(10);
+
+            try {
+                const text = await readFile(file);
+                updateProgress(50);
+                const translated = await callGeminiAPITranslation(text, sourceLang, targetLang);
+                updateProgress(100);
+                document.getElementById('translationResult').textContent = translated;
+                document.getElementById('downloadTransBtn').disabled = false;
+            } catch (error) {
+                showAlert(`Erro: ${error.message}`, 'error');
+            } finally {
+                toggleLoading(false, 'translateBtn');
+                setTimeout(() => {
+                    document.querySelector('.progress-bar').style.display = 'none';
+                    updateProgress(0);
+                }, 1000);
+            }
+        }
+
+        // Função para ler o conteúdo do arquivo
+        async function readFile(file) {
+            return new Promise(async (resolve, reject) => {
+                try {
+                    if (file.type === 'application/pdf') {
+                        const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+                        let text = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            text += content.items.map(item => item.str).join(' ');
+                        }
+                        resolve(text);
+                    }
+                    else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+                        resolve(result.value);
+                    }
+                    else {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = () => reject(new Error('Erro ao ler o arquivo.'));
+                        reader.readAsText(file);
+                    }
+                } catch (error) {
+                    reject(new Error('Erro ao processar arquivo: ' + error.message));
+                }
+            });
+        }
+
+        // Função para baixar a tradução
+        function downloadTranslation() {
+            const content = document.getElementById('translationResult').textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `traducao_${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Função para limpar os campos
+        function clearTranslation() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('selectedFile').textContent = '';
+            document.getElementById('translationResult').textContent = '';
+            document.getElementById('downloadTransBtn').disabled = true;
+        }
+
+        // Funções auxiliares para controle da interface
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.padding = '15px';
+            alert.style.borderRadius = '8px';
+            alert.style.color = 'white';
+            alert.style.background = type === 'error' ? '#dc3545' : '#28a745';
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+
+        function toggleLoading(loading, btnId) {
+            const btn = document.getElementById(btnId);
+            btn.innerHTML = loading
+                ? '<i class="fas fa-spinner loading"></i> Processando...'
+                : '<i class="fas fa-exchange-alt"></i> Traduzir';
+            btn.disabled = loading;
+        }
+
+        function updateProgress(percent) {
+            const progressBar = document.querySelector('.progress');
+            progressBar.style.width = percent + '%';
+        }
+    </script>
+</body>
+</html>

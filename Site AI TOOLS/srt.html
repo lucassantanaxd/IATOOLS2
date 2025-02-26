@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor SRT Profissional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/png" href="logo.png.ico">
+</head>
+<body>
+    <div class="glass-container">
+          <nav class="navbar">
+    <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="tradutor.html" class="nav-link"><i class="fas fa-language"></i> Tradutor</a>
+    <a href="divisor.html" class="nav-link"><i class="fas fa-cut"></i> Divisor</a>
+    <a href="contador.html" class="nav-link"><i class="fas fa-calculator"></i> Contador</a>
+    <a href="srt.html" class="nav-link active"><i class="fas fa-closed-captioning"></i> Conversor</a>
+    <a href="case.html" class="nav-link"><i class="fas fa-text-height"></i> Caixa</a>
+    <a href="transcricao.html" class="nav-link"><i class="fas fa-headphones"></i> Transcrição</a>
+</nav>
+        
+        
+        <h1><i class="fas fa-closed-captioning"></i> Conversor SRT Inteligente</h1>
+        
+        <div class="input-group">
+            <textarea id="inputText" placeholder="Cole seu texto aqui..."></textarea>
+        </div>
+                
+
+<div class="input-group" id="filenameGroup" style="display: none;">
+    <input type="text" id="filename" placeholder="Nome do arquivo (sem extensão)">
+</div>
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="processText()" id="convertBtn">
+                <i class="fas fa-sync-alt"></i> Converter
+            </button>
+            <button class="btn btn-secondary" onclick="downloadFile()" id="downloadBtn" disabled>
+                <i class="fas fa-download"></i> Baixar SRT
+            </button>
+            <button class="btn btn-danger" onclick="clearFields()">
+                <i class="fas fa-trash-alt"></i> Limpar
+            </button>
+        </div>
+        
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+
+
+function toggleLoading(loading) {
+    const btn = document.getElementById('convertBtn');
+    const progressBar = document.querySelector('.progress-bar-inner');
+    if (loading) {
+        btn.innerHTML = '<i class="fas fa-spinner loading"></i> Processando...';
+        btn.disabled = true;
+        progressBar.style.width = '100%';
+    } else {
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> Converter';
+        btn.disabled = false;
+        progressBar.style.width = '0%';
+    }
+}
+
+
+        // Mesmo JavaScript do exemplo anterior, mantido aqui para funcionalidade
+        const config = { charsPerSecond: 15, maxBlockDuration: 30, minPause: 20, maxLineLength: 450 };
+
+        function processText() {
+            const rawText = document.getElementById('inputText').value.trim();
+            if (!rawText) return showAlert('Insira texto para converter!', 'error');
+            toggleLoading(true);
+            try {
+                const blocks = splitIntoBlocks(rawText);
+                const srtContent = generateSRT(blocks);
+                document.getElementById('result').textContent = srtContent;
+                document.getElementById('downloadBtn').disabled = false;
+                showAlert('Conversão concluída!', 'success');
+            } catch (error) {
+                showAlert(`Erro: ${error.message}`, 'error');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function splitIntoBlocks(text) {
+            const paragraphs = text.split('\n').filter(p => p.trim());
+            const blocks = [];
+            let currentBlock = '';
+            let currentLength = 0;
+
+            paragraphs.forEach(paragraph => {
+                const sentences = paragraph.split(/(?<=[.!?])\s+/g);
+                sentences.forEach(sentence => {
+                    const words = sentence.split(/(\s+)/).filter(w => w.trim());
+                    words.forEach(word => {
+                        const wordLength = word.length;
+                        if ((currentLength + wordLength) > config.maxLineLength) {
+                            blocks.push(currentBlock.trim());
+                            currentBlock = '';
+                            currentLength = 0;
+                        }
+                        currentBlock += word + ' ';
+                        currentLength += wordLength + 1;
+                    });
+                });
+            });
+
+            if (currentBlock.trim().length > 0) {
+                blocks.push(currentBlock.trim());
+            }
+
+            return blocks.filter(b => b.trim());
+        }
+
+        function generateSRT(blocks) {
+            let srt = '';
+            let currentTime = 0;
+            blocks.forEach((block, index) => {
+                const duration = config.maxBlockDuration;
+                const pause = config.minPause;
+                const start = currentTime;
+                const end = start + duration;
+                srt += `${index + 1}\n${formatTime(start)} --> ${formatTime(end)}\n${block}\n\n`;
+                currentTime = end + pause;
+            });
+            return srt;
+        }
+
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)},000`;
+        }
+
+        function pad(num) { return num.toString().padStart(2, '0'); }
+
+        function downloadFile() {
+            const content = document.getElementById('result').textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `legenda_${Date.now()}.srt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearFields() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('result').textContent = '';
+            document.getElementById('downloadBtn').disabled = true;
+        }
+
+        function toggleLoading(loading) {
+            const btn = document.getElementById('convertBtn');
+            btn.innerHTML = loading ? '<i class="fas fa-spinner loading"></i> Processando...' : '<i class="fas fa-sync-alt"></i> Converter';
+            btn.disabled = loading;
+        }
+
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.padding = '15px';
+            alert.style.borderRadius = '8px';
+            alert.style.color = 'white';
+            alert.style.background = type === 'error' ? '#dc3545' : '#28a745';
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
